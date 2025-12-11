@@ -1,11 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const documentController = require('../controllers/documentController');
+const documentCreatorController = require('../controllers/documentCreatorController');
 const { authenticate, authorize, checkPermission } = require('../middleware/auth');
 const { upload, uploadVersion, handleUploadError } = require('../middleware/upload');
 
 // Toutes les routes nécessitent une authentification
 router.use(authenticate);
+
+// Création de documents (Word, Excel, PowerPoint)
+router.post('/create', 
+    checkPermission('documents', 'create'),
+    documentCreatorController.createDocument
+);
 
 // Upload de documents
 router.post('/upload', 
@@ -46,5 +53,23 @@ router.post('/:id/archive', checkPermission('documents', 'update'), documentCont
 
 // Commentaires
 router.post('/:id/comments', documentController.addComment);
+
+// Conversion de documents
+router.post('/:id/convert', 
+    checkPermission('documents', 'read'),
+    documentCreatorController.convertDocument
+);
+
+// Édition de contenu
+router.get('/:id/content', documentCreatorController.getDocumentContent);
+router.put('/:id/content', 
+    checkPermission('documents', 'update'),
+    documentCreatorController.saveDocumentContent
+);
+
+// Collaboration
+router.post('/:id/collaborate/join', documentCreatorController.joinCollaboration);
+router.post('/:id/collaborate/leave', documentCreatorController.leaveCollaboration);
+router.get('/:id/collaborators', documentCreatorController.getCollaborators);
 
 module.exports = router;

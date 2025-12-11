@@ -6,8 +6,11 @@ import { useAuth } from '../context/AuthContext';
 import {
     ArrowLeft, Download, Edit, Trash2, Share2, Lock, Unlock, Archive,
     Clock, User, Folder, Tag, FileText, MessageSquare, GitBranch,
-    ChevronDown, Send, RotateCcw, CheckCircle, XCircle, Play, FolderInput, X, Upload
+    ChevronDown, Send, RotateCcw, CheckCircle, XCircle, Play, FolderInput, X, Upload,
+    FileOutput, Users, PenTool
 } from 'lucide-react';
+import DocumentEditor from '../components/DocumentEditor';
+import ConvertDocumentModal from '../components/ConvertDocumentModal';
 
 function formatFileSize(bytes) {
     if (!bytes) return '0 B';
@@ -44,6 +47,8 @@ export default function DocumentView() {
     const [versionFile, setVersionFile] = useState(null);
     const [versionComment, setVersionComment] = useState('');
     const [uploadingVersion, setUploadingVersion] = useState(false);
+    const [showEditor, setShowEditor] = useState(false);
+    const [showConvertModal, setShowConvertModal] = useState(false);
 
     useEffect(() => {
         fetchDocument();
@@ -297,6 +302,22 @@ export default function DocumentView() {
                                     onClick={() => setShowActionsMenu(false)}
                                 />
                                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                                    {['docx', 'txt'].includes(document.fileType) && (
+                                        <button
+                                            onClick={() => { setShowEditor(true); setShowActionsMenu(false); }}
+                                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                        >
+                                            <PenTool className="w-4 h-4" />
+                                            Éditer le contenu
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => { setShowConvertModal(true); setShowActionsMenu(false); }}
+                                        className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                    >
+                                        <FileOutput className="w-4 h-4" />
+                                        Convertir
+                                    </button>
                                     <button
                                         onClick={() => { setShowMoveModal(true); setShowActionsMenu(false); setSelectedFolder(document.folder?.id || ''); }}
                                         className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
@@ -759,6 +780,23 @@ export default function DocumentView() {
                     </div>
                 </div>
             )}
+
+            {/* Document Editor */}
+            {showEditor && (
+                <DocumentEditor
+                    documentId={document.id}
+                    documentTitle={document.title}
+                    onClose={() => setShowEditor(false)}
+                    onSave={() => fetchDocument()}
+                />
+            )}
+
+            {/* Convert Document Modal */}
+            <ConvertDocumentModal
+                isOpen={showConvertModal}
+                onClose={() => setShowConvertModal(false)}
+                document={document}
+            />
         </div>
     );
 }

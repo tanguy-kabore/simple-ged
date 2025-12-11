@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import {
     Upload, FileText, Grid, List, Search, Filter, MoreVertical,
-    Download, Trash2, Edit, Eye, Share2, Lock, Archive, X, ChevronLeft, ChevronRight
+    Download, Trash2, Edit, Eye, Share2, Lock, Archive, X, ChevronLeft, ChevronRight, FilePlus
 } from 'lucide-react';
+import CreateDocumentModal from '../components/CreateDocumentModal';
 
 const FILE_ICONS = {
     pdf: '📄', doc: '📝', docx: '📝', xls: '📊', xlsx: '📊',
@@ -48,12 +49,15 @@ function StatusBadge({ status }) {
 }
 
 export default function Documents() {
+    const navigate = useNavigate();
     const [documents, setDocuments] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [folders, setFolders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [viewMode, setViewMode] = useState('list');
     const [showUploadModal, setShowUploadModal] = useState(false);
+    const [showCreateModal, setShowCreateModal] = useState(false);
     const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
     const [filters, setFilters] = useState({ search: '', categoryId: '', status: '' });
     const [uploadData, setUploadData] = useState({ title: '', description: '', categoryId: '', files: [] });
@@ -61,7 +65,17 @@ export default function Documents() {
     useEffect(() => {
         fetchDocuments();
         fetchCategories();
+        fetchFolders();
     }, [pagination.page, filters]);
+
+    const fetchFolders = async () => {
+        try {
+            const response = await api.get('/folders?flat=true');
+            setFolders(response.data.data || []);
+        } catch (error) {
+            console.error('Erreur chargement dossiers:', error);
+        }
+    };
 
     const fetchDocuments = async () => {
         try {
@@ -186,13 +200,22 @@ export default function Documents() {
                     <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
                     <p className="text-gray-500 mt-1">{pagination.total} document(s)</p>
                 </div>
-                <button
-                    onClick={() => setShowUploadModal(true)}
-                    className="btn btn-primary"
-                >
-                    <Upload className="w-4 h-4" />
-                    Nouveau document
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setShowCreateModal(true)}
+                        className="btn btn-secondary"
+                    >
+                        <FilePlus className="w-4 h-4" />
+                        Créer
+                    </button>
+                    <button
+                        onClick={() => setShowUploadModal(true)}
+                        className="btn btn-primary"
+                    >
+                        <Upload className="w-4 h-4" />
+                        Importer
+                    </button>
+                </div>
             </div>
 
             {/* Filters */}
@@ -513,6 +536,18 @@ export default function Documents() {
                     </div>
                 </div>
             )}
+
+            {/* Create Document Modal */}
+            <CreateDocumentModal
+                isOpen={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                onSuccess={(doc) => {
+                    fetchDocuments();
+                    navigate(`/documents/${doc.uuid}`);
+                }}
+                categories={flattenCategories(categories)}
+                folders={folders}
+            />
         </div>
     );
 }
